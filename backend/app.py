@@ -6,10 +6,13 @@ import logging
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
-CORS(app, resources={r"/summarize": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/summarize": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 @app.route('/summarize', methods=['POST'])
 def get_summary():
+    if request.method == 'OPTIONS':
+        # Handling preflight request
+        return '', 204
     app.logger.info("Received a request for summarization")
     data = request.json
     text = data.get('text', '')
@@ -21,4 +24,4 @@ def get_summary():
     return jsonify({'summary': summary})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8080)

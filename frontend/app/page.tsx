@@ -1,29 +1,58 @@
 'use client';
 import { useState } from 'react';
+import axios from 'axios';
 
 export default function Home() {
   const [inputText, setInputText] = useState('');
   const [summary, setSummary] = useState('');
   const [threshold, setThreshold] = useState(1.2);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     try {
-      const response = await fetch('http://localhost:5000/summarize', {
+      const response = await fetch('http://localhost:8080/summarize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include credentials if needed
         body: JSON.stringify({ text: inputText, threshold: threshold }),
       });
-      console.log('Request body:', JSON.stringify({ text: inputText, threshold: threshold }));  // Add this line
+  
+      // Log request details for debugging
+      console.log('Request body:', JSON.stringify({ text: inputText, threshold: threshold }));
+  
+      // Check if the response is ok (status in the range 200-299)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      // Check the content type of the response
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new TypeError("Oops, we haven't got JSON!");
+      }
+  
       const data = await response.json();
       setSummary(data.summary);
+  
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error:', error instanceof Error ? error.message : String(error));
+      
+      if (error instanceof Response) {
+        try {
+          const text = await error.text();
+          console.error('Response text:', text);
+        } catch (e) {
+          console.error('Failed to read error response:', e);
+        }
+      }
+      
       setSummary('An error occurred while summarizing the text.');
     }
   };
+
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
